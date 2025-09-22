@@ -22,9 +22,11 @@ buildNpmPackage rec {
 
   forceGitDeps = true;
 
-  npmFlags = [ "--cache /tmp/npm-cache" ];
+  makeCacheWritable = true;
 
-  npmInstallFlags = [ "--offline=false" ];
+  configurePhase = ''
+    export npm_config_offline="false"
+  '';
 
   buildInputs = [ electron ];
 
