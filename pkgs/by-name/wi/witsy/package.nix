@@ -43,21 +43,30 @@ buildNpmPackage rec {
   env.ELECTRON_SKIP_BINARY_DOWNLOAD = "1";
   env.ELECTRON_VERSION = electron.version;
   env.NODE_OPTIONS = "--dns-result-order=ipv4first";
-  env.prefetchNpmDeps = "prefetch-npm-deps";
+  env.prefetchNpmDeps = "${prefetch-npm-deps}/bin/prefetch-npm-deps";
 
   configurePhase = ''
     export npm_config_offline="false"
     export npm_config_ignore_scripts="true"
-    export prefetchNpmDeps="prefetch-npm-deps"
   '';
 
   preConfigure = ''
     export prefetchNpmDeps="${prefetch-npm-deps}/bin/prefetch-npm-deps"
   '';
 
-  buildInputs = [ electron ];
+  postBuild = ''
+    # Copy Electron distribution and make it writable (standard for electron-builder)
+    cp -r ${electron.dist} electron-dist
+    chmod -R u+w electron-dist
 
-  npmBuildScript = "package";
+    # Build with electron-builder in directory mode
+    npm exec electron-builder -- \
+      --dir \
+      -c.electronDist=electron-dist \
+      -c.electronVersion=${electron.version}
+  '';
+
+  buildInputs = [ electron ];
 
   npmConfigCache = "/tmp/npm-cache";
 
@@ -77,7 +86,7 @@ buildNpmPackage rec {
     mkdir -p $out/bin $out/share/witsy $out/share/applications
 
     # Copy the built app
-    cp -r out/Witsy-linux-x64/resources/app $out/share/witsy/
+    cp -r dist/linux-unpacked/resources/app $out/share/witsy/
 
     # Wrap electron
     makeWrapper ${electron}/bin/electron $out/bin/witsy \
