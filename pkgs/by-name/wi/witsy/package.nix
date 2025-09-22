@@ -22,11 +22,15 @@ buildNpmPackage rec {
 
   forceGitDeps = true;
 
+  npmFlags = [ "--cache /tmp/npm-cache" ];
+
+  npmInstallFlags = [ "--offline=false" ];
+
   buildInputs = [ electron ];
 
   npmBuildScript = "package";
 
-  npmFlags = [ "--cache /tmp/npm-cache" ];
+  npmConfigCache = "/tmp/npm-cache";
 
   desktopItem = makeDesktopItem {
     name = "witsy";
