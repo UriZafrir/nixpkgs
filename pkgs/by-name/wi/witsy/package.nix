@@ -2,6 +2,9 @@
   lib,
   buildNpmPackage,
   fetchFromGitHub,
+  fetchNpmDeps,
+  npmHooks,
+  prefetch-npm-deps,
   electron,
   makeDesktopItem,
   makeWrapper,
@@ -21,44 +24,35 @@ buildNpmPackage rec {
     hash = "sha256-YW07wBx5Ybf+87gTY6QhxuK772kNo64qqED9RCPa/uw=";
   };
 
-  npmDepsHash = "sha256-Tqh63RC9Q64KdHFT7DW3IJWviM/pRVLLYqycHskheGQ=";
+  npmDeps = fetchNpmDeps {
+    name = "${pname}-${version}-npm-deps";
+    inherit src;
+    forceGitDeps = true;
+    hash = "sha256-6l8Tgd9wxtnTgjNktBIO/b9lDJhi72vMePdwLGctlSM=";
+  };
 
   nativeBuildInputs = [
+    prefetch-npm-deps
     nodejs
   ];
-
-  forceGitDeps = true;
 
   makeCacheWritable = true;
 
   npmFlags = [ "--ignore-scripts" ];
 
-  postPatch = ''
-    # Remove the problematic Git dependency @vue/test-utils which has install scripts requiring rollup
-    # This is a dev dependency used for testing and not needed for the build
-    ${jq}/bin/jq 'del(.devDependencies."@vue/test-utils")' package.json > package.json.tmp
-    mv package.json.tmp package.json
-    ${jq}/bin/jq '
-      del(.devDependencies."@vue/test-utils") |
-      walk(
-        if type == "object" and has("packages") then
-          .packages |= with_entries(select(.key | contains("@vue/test-utils") | not))
-        else .
-        end
-      )
-    ' package-lock.json > package-lock.json.tmp
-    mv package-lock.json.tmp package-lock.json
-
-    # Set electronDist in forge.config.ts to use Nix electron
-    sed -i 's|const config: ForgeConfig = {|const config: ForgeConfig = {\n  electronDist: process.env.electronDist,|' forge.config.ts
-  '';
-
   env.ELECTRON_SKIP_BINARY_DOWNLOAD = "1";
-  env.electronDist = "${electron.dist}";
+  env.ELECTRON_VERSION = electron.version;
+  env.NODE_OPTIONS = "--dns-result-order=ipv4first";
+  env.prefetchNpmDeps = "prefetch-npm-deps";
 
   configurePhase = ''
     export npm_config_offline="false"
     export npm_config_ignore_scripts="true"
+    export prefetchNpmDeps="prefetch-npm-deps"
+  '';
+
+  preConfigure = ''
+    export prefetchNpmDeps="${prefetch-npm-deps}/bin/prefetch-npm-deps"
   '';
 
   buildInputs = [ electron ];
