@@ -38,21 +38,24 @@ buildNpmPackage rec {
 
   makeCacheWritable = true;
 
-  npmFlags = [ "--ignore-scripts" ];
+  npmFlags = [
+    "--ignore-scripts"
+    "--foreground-scripts=false"
+    "--legacy-peer-deps"
+    "--verbose"
+  ];
 
   env.ELECTRON_SKIP_BINARY_DOWNLOAD = "1";
   env.ELECTRON_VERSION = electron.version;
   env.NODE_OPTIONS = "--dns-result-order=ipv4first";
-  env.prefetchNpmDeps = "${prefetch-npm-deps}/bin/prefetch-npm-deps";
+  env.npm_config_ignore_scripts = "true";
+  env.forceGitDeps = "true";
 
   configurePhase = ''
     export npm_config_offline="false"
     export npm_config_ignore_scripts="true"
   '';
 
-  preConfigure = ''
-    export prefetchNpmDeps="${prefetch-npm-deps}/bin/prefetch-npm-deps"
-  '';
 
   postBuild = ''
     # Copy Electron distribution and make it writable (standard for electron-builder)

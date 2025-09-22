@@ -40,3 +40,5 @@ update-git-commits.txt
 
 # Usually used for manual backports
 .worktree/
+witsy-2.14.0
+witsy.tar.gz
